@@ -56,7 +56,9 @@ import AnnualTargets from "./AnnualTargets";
 
 import TechnicalDocumentation from "./TechnicalDocumentation";
 
-import MobilePreview from "./MobilePreview";
+import MobilePreview from "./MobilePreview"
+
+import LoginForm from "./LoginForm";
 
 import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
 
@@ -120,7 +122,9 @@ const PAGES = {
 
     MobilePreview: MobilePreview,
 
-}
+    LoginForm : LoginForm
+
+} 
 
 function _getCurrentPage(url) {
     if (url.endsWith('/')) {
@@ -204,6 +208,7 @@ function PagesContent() {
                 <Route path="/TechnicalDocumentation" element={<TechnicalDocumentation />} />
 
                 <Route path="/MobilePreview" element={<MobilePreview />} />
+                <Route path="/Login" element={<LoginForm />} />
 
             </Routes>
         </Layout>
