@@ -1,14 +1,23 @@
 // src/redux/api/auth/authApi.js
 import { createApi } from "@reduxjs/toolkit/query/react";
-import { baseQuery } from "../api/baseApi";
+import { baseQuery, publicBaseQuery } from "./baseApi";
 
 export const authApi = createApi({
   reducerPath: "authApi",
   baseQuery,
   endpoints: (builder) => ({
+    // 🔹 CSRF token (no credentials, no headers required)
     getCsrfToken: builder.query({
-      query: () => "/v1/auth/csrf",
+      query: () => ({
+        url: "/v1/auth/csrf",
+        method: "GET",
+        credentials: "omit", // explicitly disable cookies
+      }),
+      // Override baseQuery just for this endpoint
+      baseQuery: publicBaseQuery,
     }),
+
+    // 🔹 Authenticated APIs (use normal baseQuery)
     loginWithPassword: builder.mutation({
       query: (credentials) => ({
         url: "/v1/auth/login/password",

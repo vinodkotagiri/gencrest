@@ -2,8 +2,11 @@
 import { fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import Cookies from "js-cookie";
 
-const BASE_URL = "https://gencrest.effybiz.com/api";
+// load from .env
+const BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "https://gencrest.effybiz.com/api";
 
+// 🔹 Base query WITH credentials (for authenticated APIs)
 export const baseQuery = fetchBaseQuery({
   baseUrl: BASE_URL,
   credentials: "include",
@@ -28,4 +31,10 @@ export const baseQuery = fetchBaseQuery({
     }
     return headers;
   },
+});
+
+// 🔹 Base query WITHOUT credentials (for public endpoints like CSRF)
+export const publicBaseQuery = fetchBaseQuery({
+  baseUrl: BASE_URL,
+  credentials: "omit",
 });
