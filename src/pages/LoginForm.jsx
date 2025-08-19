@@ -12,10 +12,8 @@ import {
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 import * as Yup from "yup";
 import Cookies from "js-cookie";
-import {
-  useGetCsrfTokenQuery,
-  useLoginWithPasswordMutation,
-} from "../../redux/api/userApi";
+import { useGetCsrfTokenQuery, useLoginWithPasswordMutation } from "../../redux/api/authApi";
+
 
 const schema = Yup.object().shape({
   email: Yup.string().email("Invalid email").required("Email is required"),
