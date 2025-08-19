@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Button,
@@ -8,24 +8,18 @@ import {
   Typography,
   Avatar,
   useMediaQuery,
-  List,
-  ListItem,
-  ListItemText,
 } from "@mui/material";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 import * as Yup from "yup";
 import Cookies from "js-cookie";
-import { useLoginWithPasswordMutation } from "../../redux/api/userApi";
+import {
+  useGetCsrfTokenQuery,
+  useLoginWithPasswordMutation,
+} from "../../redux/api/userApi";
 
 const schema = Yup.object().shape({
   email: Yup.string().email("Invalid email").required("Email is required"),
-  password: Yup.string()
-    .required("Password is required")
-    .matches(/^(?=.*[a-z])/, "At least one lowercase letter")
-    .matches(/^(?=.*[A-Z])/, "At least one uppercase letter")
-    .matches(/^(?=.*[0-9])/, "At least one number")
-    .matches(/^(?=.*[!@#$%^&*])/, "At least one special character")
-    .min(8, "At least 8 characters"),
+  password: Yup.string().required("Password is required"),
 });
 
 export default function LoginForm() {
@@ -33,21 +27,25 @@ export default function LoginForm() {
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
   const isSmallScreen = useMediaQuery("(max-width:600px)");
+
+  // API hooks
   const [loginWithPassword, { isLoading }] = useLoginWithPasswordMutation();
+  const { refetch: fetchCsrf } = useGetCsrfTokenQuery(undefined, { skip: true });
 
-  const passwordRules = [
-    { test: /.{8,}/, label: "At least 8 characters" },
-    { test: /[A-Z]/, label: "At least one uppercase letter" },
-    { test: /[a-z]/, label: "At least one lowercase letter" },
-    { test: /[0-9]/, label: "At least one number" },
-    { test: /[!@#$%^&*]/, label: "At least one special character" },
-  ];
-
-  const getPasswordStatus = (password) =>
-    passwordRules.map((rule) => ({
-      label: rule.label,
-      passed: rule.test.test(password),
-    }));
+  // Fetch CSRF token on mount
+  useEffect(() => {
+    const getToken = async () => {
+      try {
+        const res = await fetchCsrf();
+        if (res?.data?.csrfToken) {
+          Cookies.set("X-CSRF-TOKEN", res.data.csrfToken, { expires: 1 });
+        }
+      } catch (error) {
+        console.error("Failed to fetch CSRF token", error);
+      }
+    };
+    getToken();
+  }, [fetchCsrf]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -58,10 +56,14 @@ export default function LoginForm() {
     try {
       await schema.validate(formData, { abortEarly: false });
       setErrors({});
+
+      // API expects "identifier" instead of "email"
       const response = await loginWithPassword({
-        email: formData.email,
+        identifier: formData.email,
         password: formData.password,
       }).unwrap();
+console.log("response 123", response);
+
       if (response?.token_detail?.token) {
         Cookies.set("authToken", JSON.stringify(response), { expires: 1 });
         alert("Login successful!");
@@ -69,6 +71,8 @@ export default function LoginForm() {
         alert("Login failed: No token received.");
       }
     } catch (err) {
+      console.log("Errorr", err);
+      
       if (err?.inner) {
         const validationErrors = {};
         err.inner.forEach((error) => {
@@ -82,9 +86,6 @@ export default function LoginForm() {
       }
     }
   };
-
-  const passwordStatus = getPasswordStatus(formData.password);
-  const passwordValid = passwordStatus.every((rule) => rule.passed);
 
   return (
     <Box
@@ -107,11 +108,7 @@ export default function LoginForm() {
         <Avatar
           src="/images/gen-icon.png"
           alt="Gencrest Logo"
-          sx={{
-            width: 80,
-            height: 80,
-            margin: "0 auto",
-          }}
+          sx={{ width: 80, height: 80, margin: "0 auto" }}
         />
 
         <Typography variant="h6" mt={3} fontWeight="bold" color="#000">
@@ -143,10 +140,7 @@ export default function LoginForm() {
             type={showPassword ? "text" : "password"}
             value={formData.password}
             onChange={handleChange}
-            error={
-              !!errors.password ||
-              (!passwordValid && formData.password.length > 0)
-            }
+            error={!!errors.password}
             helperText={errors.password}
             InputProps={{
               endAdornment: (
@@ -161,19 +155,6 @@ export default function LoginForm() {
               ),
             }}
           />
-
-          {formData.password.length > 0 && !passwordValid && (
-            <List dense sx={{ textAlign: "left", mt: 1 }}>
-              {passwordStatus.map((rule, idx) => (
-                <ListItem
-                  key={idx}
-                  sx={{ color: rule.passed ? "green" : "red" }}
-                >
-                  <ListItemText primary={rule.label} />
-                </ListItem>
-              ))}
-            </List>
-          )}
 
           <Typography
             variant="body2"
@@ -195,14 +176,14 @@ export default function LoginForm() {
               "&.Mui-disabled": {
                 backgroundColor: "#c2185b",
                 color: "#fff",
-                opacity: 0.7, // slightly faded but still visible
+                opacity: 0.7,
               },
               textTransform: "none",
               fontSize: "16px",
               py: 1.5,
               borderRadius: "8px",
             }}
-            disabled={!passwordValid || isLoading}
+            disabled={isLoading}
           >
             {isLoading ? "Logging in..." : "Login"}
           </Button>

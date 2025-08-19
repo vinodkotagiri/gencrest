@@ -1,18 +1,22 @@
+// src/redux/api/userApi.js
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import Cookies from "js-cookie";
+
+const BASE_URL = "https://gencrest.effybiz.com/api";
 
 export const userApi = createApi({
   reducerPath: "userApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: import.meta.env.VITE_API_BASE_URL, // ✅ Fixed
-    prepareHeaders: (headers) => {
-      // Optional CSRF token
+    baseUrl: BASE_URL,
+    credentials: "include",
+    prepareHeaders: (headers, { endpoint }) => {
+      // CSRF token
       const csrfToken = Cookies.get("X-CSRF-TOKEN");
       if (csrfToken) {
         headers.set("X-CSRF-TOKEN", csrfToken);
       }
 
-      // Optional Auth token
+      // Auth token
       const authToken = Cookies.get("authToken");
       if (authToken) {
         try {
@@ -20,58 +24,33 @@ export const userApi = createApi({
           if (parsed?.token_detail?.token) {
             headers.set("Authorization", `Bearer ${parsed.token_detail.token}`);
           }
-        } catch (e) {
+        } catch {
           console.warn("Invalid auth token format");
         }
       }
-
       return headers;
     },
   }),
-  tagTypes: ["User"],
-
   endpoints: (builder) => ({
-    // Login API
+    getCsrfToken: builder.query({
+      query: () => "/v1/auth/csrf",
+    }),
     loginWithPassword: builder.mutation({
       query: (credentials) => ({
-        url: "/api/v1/auth/login/password",
+        url: "/v1/auth/login/password",
         method: "POST",
         body: credentials,
       }),
     }),
-
-    // Example other APIs
-    searchUser: builder.mutation({
-      query: (requestData) => ({
-        url: "/searchuser",
-        method: "POST",
-        body: requestData,
-      }),
-      invalidatesTags: ["User"],
-    }),
-
-    validateUser: builder.mutation({
-      query: (requestData) => ({
-        url: "/validateuser",
-        method: "POST",
-        body: requestData,
-      }),
-      invalidatesTags: ["User"],
-    }),
-
-    getAllUsers: builder.query({
-      query: () => ({
-        url: "/users",
-        method: "GET",
-      }),
-      providesTags: ["User"],
+    getCurrentUser: builder.query({
+      query: () => "/v1/user/me",
     }),
   }),
 });
 
 export const {
+  useGetCsrfTokenQuery,
+  useLazyGetCsrfTokenQuery,
   useLoginWithPasswordMutation,
-  useSearchUserMutation,
-  useValidateUserMutation,
-  useGetAllUsersQuery,
+  useGetCurrentUserQuery,
 } = userApi;
