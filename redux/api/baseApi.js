@@ -11,13 +11,8 @@ export const baseQuery = fetchBaseQuery({
   baseUrl: BASE_URL,
   credentials: "include",
   prepareHeaders: (headers) => {
-    // CSRF token
-    const csrfToken = Cookies.get("X-CSRF-TOKEN");
-    if (csrfToken) {
-      headers.set("X-CSRF-TOKEN", csrfToken);
-    }
-
-    // Auth token
+    headers.set('Accept', '*/*');
+    headers.set('Content-Type', 'application/json');
     const authToken = Cookies.get("authToken");
     if (authToken) {
       try {
